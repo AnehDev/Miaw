@@ -1,1 +1,102 @@
-twat
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redirecting...</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    background: #0b0b0b; color: #eee;
+  }
+  .box { text-align: center; }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid #333; border-top-color: #4af;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  a { color: #4af; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="spinner"></div>
+  <p id="status">Checking server...</p>
+  <p id="fallback" style="display:none">
+    If you are not redirected, <a id="manual" href="#">click here</a>.
+  </p>
+</div>
+
+<script>
+/* =========================================================
+   Mirror list — checked top to bottom.
+   - `health`:  a Cloudflare Function endpoint that returns 200 OK
+                with `Access-Control-Allow-Origin: *`.
+                Set to null for a "blind" final fallback.
+   - `target`:  where to send the user if `health` is OK.
+   Edit these to match your real domains.
+   ========================================================= */
+const mirrors = [
+  {
+    health: "https://anehgmainginject.pages.dev/api/test",
+    target: "https://anehgmainginject.pages.dev/"
+  },
+  {
+    health: "https://anehgaminginjectoor.pages.dev/api/test",
+    target: "https://anehgaminginjectoor.pages.dev/"
+  },
+  {
+    // Final static fallback — no Function involved, always reachable.
+    health: null,
+    target: "https://your-backup.example/"
+  }
+];
+
+const TIMEOUT_MS = 4000;
+
+async function isAlive(url) {
+  if (!url) return false;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const res = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+      signal: ctrl.signal
+    });
+    clearTimeout(t);
+    // 2xx => Function ran fine (still under quota).
+    // 429 / 5xx / Cloudflare error page => not OK -> try next mirror.
+    return res.ok;
+  } catch (_) {
+    // Timeout, DNS failure, network error, or CORS-blocked CF error page.
+    return false;
+  }
+}
+
+async function pickMirror() {
+  for (const m of mirrors) {
+    if (!m.health) return m.target;          // last resort
+    if (await isAlive(m.health)) return m.target;
+  }
+  return mirrors[mirrors.length - 1].target; // safety net
+}
+
+(async () => {
+  const dest = await pickMirror();
+  document.getElementById("status").textContent = "Redirecting...";
+  // Show manual link in case redirect is blocked.
+  const fb = document.getElementById("fallback");
+  const manual = document.getElementById("manual");
+  manual.href = dest;
+  fb.style.display = "block";
+  window.location.replace(dest);
+})();
+</script>
+</body>
+</html>
