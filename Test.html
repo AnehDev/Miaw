@@ -3,38 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Redirecting...</title>
+<title>Checking...</title>
 
 <script>
+const api = "https://anehgmainginject.pages.dev/api/test";
 const primary = "https://anehgmainginject.pages.dev/";
 const backup = "https://test.com/";
 
-async function checkAndRedirect() {
+async function detectFunction() {
     try {
-        // Check if primary site is alive
         const controller = new AbortController();
 
-        // Timeout after 3 seconds
         const timeout = setTimeout(() => {
             controller.abort();
-        }, 3000);
+        }, 4000);
 
-        const response = await fetch(primary, {
-            method: "HEAD",
+        const res = await fetch(api, {
+            method: "GET",
             cache: "no-store",
             signal: controller.signal
         });
 
         clearTimeout(timeout);
 
-        if (response.ok) {
+        // Cloudflare quota exceeded usually gives error codes
+        if (res.ok) {
             window.location.href = primary;
         } else {
             window.location.href = backup;
         }
 
-    } catch (e) {
-        // If fetch failed / timeout
+    } catch (err) {
+        // timeout / fetch failed
+        window.location.href = backup;
+    }
+}
+
+detectFunction();
+</script>
+
+</head>
+<body>
+Checking server...
+</body>
+</html>        // If fetch failed / timeout
         window.location.href = backup;
     }
 }
