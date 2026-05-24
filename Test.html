@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redirecting...</title>
+
+<script>
+const primary = "https://anehgmainginject.pages.dev/";
+const backup = "https://test.com/";
+
+async function checkAndRedirect() {
+    try {
+        // Check if primary site is alive
+        const controller = new AbortController();
+
+        // Timeout after 3 seconds
+        const timeout = setTimeout(() => {
+            controller.abort();
+        }, 3000);
+
+        const response = await fetch(primary, {
+            method: "HEAD",
+            cache: "no-store",
+            signal: controller.signal
+        });
+
+        clearTimeout(timeout);
+
+        if (response.ok) {
+            window.location.href = primary;
+        } else {
+            window.location.href = backup;
+        }
+
+    } catch (e) {
+        // If fetch failed / timeout
+        window.location.href = backup;
+    }
+}
+
+checkAndRedirect();
+</script>
+
+</head>
+<body>
+<p>Redirecting...</p>
+</body>
+</html>
